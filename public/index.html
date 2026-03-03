@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyBuddy 🎓</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <canvas id="confetti-canvas"></canvas>
+  <div id="toast-container"></div>
+
+  <!-- Achievement modal -->
+  <div id="achievement-modal" class="hidden">
+    <div class="achievement-modal-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:15px;font-weight:700;color:var(--text);">🏆 Achievements</span>
+        <button id="achievement-close" style="background:none;border:none;color:var(--text-muted);font-size:18px;line-height:1;cursor:pointer;">&times;</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Complete tasks to unlock these.</p>
+      <div id="achievement-grid" class="achievement-grid"></div>
+    </div>
+  </div>
+
+  <!-- ── Header ── -->
+  <header class="app-header">
+    <div class="header-brand">
+      📚 StudyBuddy
+      <span id="user-greeting">Hey, there!</span>
+    </div>
+
+    <div class="header-gamification">
+      <div class="level-badge" id="level-badge">LVL 1</div>
+      <div class="xp-track">
+        <div class="xp-bar-bg">
+          <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div>
+        </div>
+        <div class="xp-label" id="xp-label">0 / 100 XP</div>
+      </div>
+      <div class="streak-badge">
+        <span class="streak-flame" id="streak-flame">🔥</span>
+        <span id="streak-val">0</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <span id="pomodoro-timer" style="display:none;"></span>
+      <button class="btn-icon" id="pomo-btn"><span>🍅</span> Study Mode</button>
+      <button class="btn-icon btn-wellbeing" id="wellbeing-btn" title="Wellbeing Support">💚 Wellbeing</button>
+      <button class="btn-icon" id="trophy-btn" title="Achievements">🏆</button>
+      <button class="btn-logout" id="logout-btn">Log out</button>
+    </div>
+  </header>
+
+  <!-- ── Wellbeing chat modal ── -->
+  <div id="wellbeing-modal" class="hidden">
+    <div class="wb-modal">
+      <div class="wb-header">
+        <div class="wb-header-left">
+          <span class="wb-title">💚 Wellbeing Support</span>
+          <span class="wb-subtitle">Confidential — here to listen</span>
+        </div>
+        <button id="wellbeing-close" style="background:none;border:none;color:var(--text-muted);font-size:22px;line-height:1;cursor:pointer;padding:4px;">&times;</button>
+      </div>
+      <div id="wb-messages"></div>
+      <div id="wb-typing">
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+      <div class="wb-input-bar">
+        <input id="wb-input" type="text" placeholder="Tell me how you're feeling…" autocomplete="off" />
+        <button class="chat-send-btn" id="wb-send-btn" aria-label="Send">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main layout: two card columns ── -->
+  <div class="main-layout">
+
+    <!-- LEFT: Calendar card (~65%) -->
+    <div class="card calendar-panel">
+      <div class="cal-nav">
+        <div class="cal-nav-left">
+          <button class="cal-arrow" id="cal-prev">&#8249;</button>
+          <button class="cal-arrow" id="cal-next">&#8250;</button>
+          <span class="cal-week-label" id="week-label">March 2026</span>
+        </div>
+        <button class="cal-today-btn" id="cal-today">Today</button>
+      </div>
+
+      <div class="cal-grid" id="cal-grid"></div>
+
+      <div class="cal-footer">
+        <p>📅 Calendar sync coming soon</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: stacked chatbot + todo cards (~35%) -->
+    <div class="right-col">
+
+      <!-- Chatbot card (collapsible) -->
+      <div class="card chatbot-card" id="chatbot-panel">
+        <div class="chat-header" onclick="if(chatMinimized) toggleChatbot()" style="cursor:pointer">
+          <div class="chat-header-left">
+            <span class="chat-title">🤖 StudyBuddy AI</span>
+            <span class="chat-last-preview" id="chat-preview"></span>
+          </div>
+          <div class="chat-header-right">
+            <button class="chat-clear-btn" id="chat-clear-btn" onclick="event.stopPropagation();clearChat()">Clear</button>
+            <button class="chat-toggle-btn" id="chat-toggle-btn" onclick="event.stopPropagation();toggleChatbot()">
+              <span id="chat-chevron">▾</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-body">
+          <div id="chat-messages"></div>
+          <div id="typing-indicator">
+            <div class="typing-dots">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+          <div class="chat-input-bar">
+            <div style="position:relative;flex:1;display:flex;">
+              <div id="onboarding-tip" style="display:none;">👋 Start by telling me about an assignment!</div>
+              <input id="chat-input" type="text" placeholder="Describe an assignment or tell me how you're feeling…" autocomplete="off" />
+            </div>
+            <button class="chat-send-btn" id="chat-send-btn" aria-label="Send">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Todo list card -->
+      <div class="card todo-card">
+        <div class="todo-header">
+          <span class="todo-title">📋 My Tasks</span>
+          <span class="task-count-badge" id="task-count">0 remaining</span>
+        </div>
+        <div id="todo-list"></div>
+        <div class="todo-footer">
+          <button class="btn-clear" id="clear-completed-btn">Clear completed</button>
+          <span style="font-size:10px;color:var(--text-dim);">Built at Hackathon 2026</span>
+          <button id="reset-demo-btn" style="font-size:10px;color:var(--text-dim);background:none;border:none;cursor:pointer;">Reset Demo</button>
+        </div>
+      </div>
+
+    </div><!-- /right-col -->
+  </div><!-- /main-layout -->
+
+  <script src="config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/gamification.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/todo.js"></script>
+  <script src="js/pomodoro.js"></script>
+  <script src="js/wellbeing.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
