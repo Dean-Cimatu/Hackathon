@@ -69,6 +69,11 @@ async function init() {
   document.getElementById('wellbeing-modal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('wellbeing-modal')) closeWellbeing();
   });
+  document.getElementById('summarise-btn')?.addEventListener('click', openSummarise);
+  document.getElementById('summarise-close')?.addEventListener('click', closeSummarise);
+  document.getElementById('summarise-modal')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('summarise-modal')) closeSummarise();
+  });
   document.getElementById('wb-send-btn')?.addEventListener('click', sendWbMessage);
   document.getElementById('wb-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendWbMessage(); }

@@ -51,10 +51,56 @@
       <span id="pomodoro-timer" style="display:none;"></span>
       <button class="btn-icon" id="pomo-btn"><span>🍅</span> Study Mode</button>
       <button class="btn-icon btn-wellbeing" id="wellbeing-btn" title="Wellbeing Support">💚 Wellbeing</button>
+      <button class="btn-icon btn-summarise" id="summarise-btn" title="Summarise a lecture video">📝 Summarise</button>
       <button class="btn-icon" id="trophy-btn" title="Achievements">🏆</button>
       <button class="btn-logout" id="logout-btn">Log out</button>
     </div>
   </header>
+
+  <!-- ── Summarise modal ── -->
+  <div id="summarise-modal" class="hidden">
+    <div class="sum-modal">
+      <div class="sum-header">
+        <div class="sum-header-left">
+          <span class="sum-title">📝 Summarise Lecture</span>
+          <span class="sum-subtitle">Paste a YouTube link or upload a video</span>
+        </div>
+        <button id="summarise-close" style="background:none;border:none;color:var(--text-muted);font-size:22px;line-height:1;cursor:pointer;padding:4px;">&times;</button>
+      </div>
+
+      <div class="sum-tabs">
+        <button class="sum-tab active" id="sum-tab-url" onclick="switchSumTab('url')">🔗 YouTube URL</button>
+        <button class="sum-tab" id="sum-tab-file" onclick="switchSumTab('file')">📁 Upload Video</button>
+      </div>
+
+      <div id="sum-url-panel" class="sum-panel">
+        <input id="sum-url-input" type="text" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+        <button class="sum-submit-btn" id="sum-url-btn" onclick="summariseYoutube()">Summarise</button>
+      </div>
+
+      <div id="sum-file-panel" class="sum-panel hidden">
+        <label class="sum-file-label" for="sum-file-input">Click to choose a video file (MP4, MOV, WEBM, MKV)</label>
+        <input id="sum-file-input" type="file" accept=".mp4,.mov,.webm,.mkv" style="display:none" onchange="updateSumFilename(this)" />
+        <div id="sum-file-name" class="sum-file-name">No file chosen</div>
+        <button class="sum-submit-btn" id="sum-file-btn" onclick="summariseFile()">Summarise</button>
+      </div>
+
+      <div id="sum-loading" class="sum-loading hidden">
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+        <span>Processing video — this may take a minute…</span>
+      </div>
+
+      <div id="sum-results" class="sum-results hidden">
+        <div class="sum-results-title">Summary</div>
+        <ul id="sum-bullets"></ul>
+        <button class="sum-copy-btn" onclick="copySummary()">Copy to clipboard</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Wellbeing chat modal ── -->
   <div id="wellbeing-modal" class="hidden">
@@ -175,6 +221,7 @@
   <script src="js/todo.js"></script>
   <script src="js/pomodoro.js"></script>
   <script src="js/wellbeing.js"></script>
+  <script src="js/summarise.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
