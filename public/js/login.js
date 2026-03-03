@@ -28,22 +28,17 @@ function registerUser() {
     const regPass = document.getElementById("regPass").value;
     const confirmPass = document.getElementById("confirmPass").value;
     
-    // An object to hold the registration data
+    // An object to hold the registration data (include confirmPassword so server can re-validate)
     const registerData = {
         name: regName,
         password: regPass,
+        confirmPassword: confirmPass,
         email: regEmail,
     }
     
-    // Checking if the name is valid by seeing if its between 3-20 characters long and seeing if its already in local storage
+    // Checking if the name is valid by seeing if its between 3-20 characters long
     if(regName.length >= 3 && regName.length <= 20) {
-        if (localStorage.getItem(regName) !== null){ 
-            alert("Name already taken!");
-            nameCheck = false;
-        }
-        else {
-            nameCheck = true;
-        }
+        nameCheck = true;
     } else {
         alert("Name must be 3-20 characters long");
     }
@@ -71,17 +66,33 @@ function registerUser() {
 
     // Checking if all inputs are valid
     if (nameCheck && passwordCheck && emailCheck && confirmPasswordCheck) {
-        // Converting the users data into JSON and storing it in local storage
-        const registerDataStr = JSON.stringify(registerData);
-        localStorage[registerData.name] = registerDataStr;
-        alert("Account created successfully!");
-        // Clear inputs
-        document.getElementById("regName").value = "";
-        document.getElementById("regEmail").value = "";
-        document.getElementById("regPass").value = "";
-        document.getElementById("confirmPass").value = "";
-        // Switch to login section
-        showLogin();
+        // Send registration data to the server
+        fetch('/M01028229/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(registerData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.registered) {
+                alert("Account created successfully!");
+                // Clear inputs
+                document.getElementById("regName").value = "";
+                document.getElementById("regEmail").value = "";
+                document.getElementById("regPass").value = "";
+                document.getElementById("confirmPass").value = "";
+                // Switch to login section
+                showLogin();
+            } else {
+                alert(data.message || "Registration failed!");
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert("An error occurred during registration. Please try again.");
+        });
     }
 }
 
@@ -97,34 +108,35 @@ function loginUser() {
         return;
     }
 
-    // Search for user by email
-    let foundUser = null;
-    let foundUserName = null;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const userObj = JSON.parse(localStorage[key]);
-        if (userObj.email === loginEmail) {
-            foundUser = userObj;
-            foundUserName = key;
-            break;
-        }
-    }
+    // Create login data object
+    const loginData = {
+        email: loginEmail,
+        password: loginPass
+    };
 
-    // Checking if the user was found
-    if (!foundUser) {
-        alert("User not found!");
-    } else {
-        // Checking if the user typed the correct password
-        if (loginPass === foundUser.password) {
-            // Setting the current logged in user in session storage then sending the player to the game
-            sessionStorage.setItem("loggedInUser", foundUserName);
+    // Send login request to the server
+    fetch('/M01028229/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.login) {
             alert("Login successful!");
             // Clear inputs
             document.getElementById("loginEmail").value = "";
             document.getElementById("loginPass").value = "";
-            setTimeout(() => {window.location.href = "game.html"}, 1000);
+            // Redirect to the main page after successful login
+            setTimeout(() => {window.location.href = "index.html"}, 1000);
         } else {
-            alert("Incorrect password!");
+            alert(data.message || "Login failed!");
         }
-    }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert("An error occurred during login. Please try again.");
+    });
 }

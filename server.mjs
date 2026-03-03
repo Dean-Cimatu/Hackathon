@@ -39,8 +39,8 @@ const AI_client = new OpenAI({
 })
 
 // Database collections
-const usersCollection = client.db('cst2120').collection('users');
-const contentsCollection = client.db('cst2120').collection('contents');
+const usersCollection = client.db('hackathon').collection('users');
+const contentsCollection = client.db('hackathon').collection('contents');
 let results;
 
 // Regex patterns for password, email, and phone validation
@@ -52,6 +52,7 @@ const phoneRegex = new RegExp("^07\\d{8,9}$");
 app.post('/M01028229/users', async (req, res)=>{
     // Getting the users data
     const newUser = req.body;
+    console.log('Registration payload received:', newUser);
     
     // Checking for existing emails and usernames
     const existingEmail = await usersCollection.findOne({email: newUser.email});
@@ -76,14 +77,16 @@ app.post('/M01028229/users', async (req, res)=>{
     } else if (!emailRegex.test(newUser.email)) { 
         res.send({registered: false, message: "⚠️ Invalid email address!"});
         return;
-    } else if (!phoneRegex.test(newUser.phone)) { 
-        res.send({registered: false, message: "⚠️ Invalid phone number!"});
+    } else if (newUser.password !== newUser.confirmPassword) {
+        console.warn('Password mismatch:', newUser.password, newUser.confirmPassword);
+        res.send({registered: false, message: "⚠️ Passwords do not match!"});
         return;
     } 
-    // Sending user data to database
+    // Sending user data to database (omit the confirmPassword field)
     else {
-        results = await usersCollection.insertOne(newUser);
-        res.send({registered: true, email: newUser.email})
+        const { confirmPassword, ...userToInsert } = newUser;
+        results = await usersCollection.insertOne(userToInsert);
+        res.send({registered: true, email: userToInsert.email})
         return;
     }
 });
