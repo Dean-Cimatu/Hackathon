@@ -11,7 +11,11 @@ import { v4 as uuidv4 } from 'uuid';
 // Express setup
 const app = express();
 app.use(bodyParser.json());
-app.use(fileUpload());
+// Configure file uploads: increase max file size for videos and ensure upload path exists
+app.use(fileUpload({
+    limits: { fileSize: 200 * 1024 * 1024 }, // 200 MB limit
+    createParentPath: true
+}));
 app.use(express.static('public'));
 app.use(expressSession({
     secret: "uhogrkriunfoajeijhovrubnhu42btij4k",
@@ -46,7 +50,6 @@ let results;
 // Regex patterns for password, email, and phone validation
 const passwordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})");
 const emailRegex = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-const phoneRegex = new RegExp("^07\\d{8,9}$");
 
 // Registration process
 app.post('/M01028229/users', async (req, res)=>{
@@ -144,75 +147,83 @@ app.delete('/M01028229/login', (req, res)=> {
     }) 
 })
 
-// Posting content
-app.post('/M01028229/contents', async (req, res)=>{
-    // Checking if user is logged in
-    if (!req.session.email) { 
-        res.send({error: true, message: "⚠️ You need to be logged in to post content"})
-        return;
-    }
+// // Posting content
+// app.post('/M01028229/contents', async (req, res)=>{
+//     // Checking if user is logged in
+//     if (!req.session.email) { 
+//         res.send({error: true, message: "⚠️ You need to be logged in to post content"})
+//         return;
+//     }
 
-    // Getting the text and image url and storing them
-    const { text, imageURL } = req.body;
-    // Making a prompt to automatically generate a title
-    const prompt = `The user has written this post: ${text}. Make a title for this users post which aligns with the content of the users post and is also relaxing. You are allowed a maximum of 8 words.`
+//     // Getting the text and image url and storing them
+//     const { text, imageURL } = req.body;
+//     // Making a prompt to automatically generate a title
+//     const prompt = `The user has written this post: ${text}. Make a title for this users post which aligns with the content of the users post and is also relaxing. You are allowed a maximum of 8 words.`
 
-    // Awaiting a response from AI
-    const response = await AI_client.responses.create({
-        // JSON Schema
-        model: "gpt-5.1",
-        input: prompt,
-        text: {
-            format: {
-                type: "json_schema",
-                name: "post_title_response",
-                schema: {
-                    type: "object",
-                    properties: {
-                        title: {type: "string"}
-                    },
-                    required: ["title"],
-                    additionalProperties: false
-                }
-            }
-        }
-    });
+//     // Awaiting a response from AI
+//     const response = await AI_client.responses.create({
+//         // JSON Schema
+//         model: "gpt-5.1",
+//         input: prompt,
+//         text: {
+//             format: {
+//                 type: "json_schema",
+//                 name: "post_title_response",
+//                 schema: {
+//                     type: "object",
+//                     properties: {
+//                         title: {type: "string"}
+//                     },
+//                     required: ["title"],
+//                     additionalProperties: false
+//                 }
+//             }
+//         }
+//     });
 
-    // Storing the title as the parsed response
-    const title = JSON.parse(response.output_text).title;
+//     // Storing the title as the parsed response
+//     const title = JSON.parse(response.output_text).title;
 
-    // The content is stored with the users name, email, text for the post, imageurl and title
-    const newContent = {
-        name: req.session.name || "Unknown",
-        email: req.session.email,
-        post: text,
-        imageURL: imageURL || null,
-        title: title,
-    };
+//     // The content is stored with the users name, email, text for the post, imageurl and title
+//     const newContent = {
+//         name: req.session.name || "Unknown",
+//         email: req.session.email,
+//         post: text,
+//         imageURL: imageURL || null,
+//         title: title,
+//     };
     
-    // Add the content to the contents collection and send the users name and their content as response
-    results = await contentsCollection.insertOne(newContent);
-    res.send({name: req.session.name, content: newContent})
-});
+//     // Add the content to the contents collection and send the users name and their content as response
+//     results = await contentsCollection.insertOne(newContent);
+//     res.send({name: req.session.name, content: newContent})
+// });
 
 // Uploading files
 app.post('/M01028229/upload', async (req, res)=>{
+    // Accept either `videoFile` (preferred) or `uploadFile` (fallback)
+    const uploaded = req.files?.videoFile || req.files?.uploadFile;
     // If no file was uploaded then return an error
-    if (!req.files?.uploadFile) {
+    if (!uploaded) {
         res.send({error: true, message: "⚠️ No file uploaded"});
         return;
     }
 
-    // Storing the users file
-    let myFile = req.files.uploadFile;
+    // Storing the user's file
+    let myFile = uploaded;
 
-    // Making the users file name unique
-    let uniqueFilename = uuidv4();
+    // Validate that the file is a video by extension
+    const allowedExt = ['.mp4', '.webm', '.mov', '.mkv'];
+    const originalName = myFile.name || '';
+    const ext = originalName.substring(originalName.lastIndexOf('.')).toLowerCase();
+    if (!allowedExt.includes(ext)) {
+        res.status(400).send({error: true, message: '⚠️ Invalid file type. Only video files are allowed.'});
+        return;
+    }
 
-    // Adding the file extension to the new file name
-    uniqueFilename += myFile.name.substring(myFile.name.lastIndexOf('.'), myFile.name.length);
+    // Make the filename unique and keep the original extension
+    let uniqueFilename = uuidv4() + ext;
 
-    // Adding the file to the uploads folder
+    // Move the file to the uploads folder
     myFile.mv("./public/uploads/" + uniqueFilename, (err) => {
         // If there is an error then send an error as response, else return
         if (err) {
@@ -229,34 +240,38 @@ app.post('/M01028229/upload', async (req, res)=>{
     });
 });
 
-// Searching content
-app.get('/M01028229/contents', async (req, res)=>{ 
-    // Checking if the user is logged in
-    if(!req.session.email) { 
-        res.send({error: true, message: "⚠️ You need to be logged in to search"});
-        return;
-    }
+// // Searching content
+// app.get('/M01028229/contents', async (req, res)=>{ 
+//     // Checking if the user is logged in
+//     if(!req.session.email) { 
+//         res.send({error: true, message: "⚠️ You need to be logged in to search"});
+//         return;
+//     }
     
-    // Getting the current user from the database
-    const user = await usersCollection.findOne({email: req.session.email});
-    // If the user doesnt follow anyone then return results as an empty array
-    if (!user || !user.follows || user.follows.length === 0) {
-        res.send({ results: [] });
-        return;
-    }
+//     // Getting the current user from the database
+//     const user = await usersCollection.findOne({email: req.session.email});
+//     // If the user doesnt follow anyone then return results as an empty array
+//     if (!user || !user.follows || user.follows.length === 0) {
+//         res.send({ results: [] });
+//         return;
+//     }
 
-    // Getting the users query
-    const query = req.query.q;
+//     // Getting the users query
+//     const query = req.query.q;
 
-    // Finding content from the users followers list using the index on the users input
-    const results = await contentsCollection.find({$text: {
-        $search: query},
-        email: { $in: user.follows }
-    }).toArray();
+//     // Finding content from the users followers list using the index on the users input
+//     const results = await contentsCollection.find({$text: {
+//         $search: query},
+//         email: { $in: user.follows }
+//     }).toArray();
 
-    // Send the results
-    res.send({results: results});
-});
+//     // Send the results
+//     res.send({results: results});
+// });
+
+// =================================
+// POTENTIAL FRIEND SYSTEM BELOW??
+// =================================
 
 // Following a user
 app.post('/M01028229/follow', async (req, res) => {
@@ -335,30 +350,6 @@ app.get('/M01028229/follows', async (req, res) => {
 
     // Send the users following list
     res.send({follows: user.follows});
-});
-
-// Accessing the users content
-app.get('/M01028229/feed', async (req, res)=>{
-    // Checking if the user is logged in
-    if(!req.session.email) {
-        res.send({error: true, message: "⚠️ You need to be logged in to view content"})
-        return;
-    }
-
-    // Getting the current user from the database
-    const user = await usersCollection.findOne({email: req.session.email});
-
-    // If the user is not following anyone the return an error message
-    if (user.follows.length === 0) {
-        res.send({feed: [], message: "⚠️ You are not following anyone yet!"});
-        return;
-    }
-
-    // Getting all the content for the user from people they follow
-    const feed = await contentsCollection.find({email: {$in: user.follows}}).toArray();
-
-    // Send the users feed
-    res.send({feed: feed, viewer: req.session.name});
 });
 
 // AI Chatbot
