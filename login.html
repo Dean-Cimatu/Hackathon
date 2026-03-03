@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Linking a font from google fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5&display=swap" rel="stylesheet">  
+    <!-- Linking my stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Adding a title to the web page -->
+    <title>Sign up</title>
+    <!-- Adding an icon to the tab -->
+    <link rel="icon" type="image/x-icon" href="images/cards/page_icon.png">
+</head>
+<body>
+    <!-- The container which holds all of the signup details -->
+    <div class="container">
+        <div></div>
+        <!-- Styling for the container -->
+        <section class="signup">
+            <!-- Main content of the signup page -->
+            <div class="title">Sign Up</div>
+            <!-- Inputs with error messages -->
+            <input type="text" placeholder="Name" class="input" id="regName">
+            <input type="email" placeholder="Email" class="input" id="regEmail">
+            <input type="password" placeholder="Password" class="input" id="regPass">
+            <input type="password" placeholder="Confirm Password" class="input" id="confirmPass">
+            
+            <!-- Buttons -->
+            <div class="button" onclick="registerUser()">Sign Up</div>
+            <div class="small-text">Already have an account? <a href="javascript:void(0);" onclick="showLogin()" class="small-link">Log in</a></div>
+        </section>
+        <section class="hidden login">
+            <!-- Main content of the signup page -->
+            <div class="title">Log In</div>
+            <!-- Inputs with error messages -->
+            <input type="email" placeholder="Email" class="input" id="loginEmail">
+            <input type="password" placeholder="Password" class="input" id="loginPass">
+            
+            <!-- Buttons -->
+            <div class="button" onclick="loginUser()">Log In</div>
+            <div class="small-text">Don't have an account? <a href="javascript:void(0);" onclick="showSignup()" class="small-link">Sign Up</a></div>
+        </section>
+        <div></div>
+    </div>
+    <!-- Linked javascript file to this html file -->
+    <script src="js/login.js"></script>
+    <script type="module" src="js/script.js"></script>
+</body>
+</html>
